@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إنشاء حساب</title>
+  <link rel="stylesheet" href="../css/style-signup.css">
+</head>
+<body>
+  <div class="signup-box">
+    <h2>إنشاء حساب جديد</h2>
+
+    <div class="input-group">
+      <label>الاسم الكامل</label>
+      <input id="name" type="text" placeholder="أدخل اسمك الكامل">
+    </div>
+
+    <div class="input-group">
+      <label>البريد الإلكتروني</label>
+      <input id="email" type="email" placeholder="أدخل بريدك الإلكتروني">
+    </div>
+
+    <div class="input-group">
+      <label>كلمة المرور</label>
+      <input id="password" type="password" placeholder="أدخل كلمة المرور">
+    </div>
+
+    <div class="input-group">
+      <label>تأكيد كلمة المرور</label>
+      <input id="confirm-password" type="password" placeholder="أعد إدخال كلمة المرور">
+    </div>
+
+    <button class="signup-btn" id="signupBtn">إنشاء حساب</button>
+
+    <div class="login-link">
+      لديك حساب بالفعل؟ <a href="login.html">سجل الدخول</a>
+    </div>
+  </div>
+
+
+  <script type="module">
+    import { auth } from '../js/firebase.js';
+    import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      // التحقق من صحة البيانات
+      if (!name || !email || !password || !confirmPassword) {
+        alert("يرجى ملء جميع الحقول");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert("كلمتا المرور غير متطابقتين");
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await updateProfile(user, {
+          displayName: name,
+          photoURL: "https://example.com/avatar.png"
+        });
+
+        // حفظ بيانات المستخدم في localStorage
+        localStorage.setItem("user", JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName
+        }));
+
+        // الانتقال إلى صفحة تسجيل الدخول
+        location.href = "login.html";
+      } catch (error) {
+        alert("حدث خطأ أثناء إنشاء الحساب: " + error.message);
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>

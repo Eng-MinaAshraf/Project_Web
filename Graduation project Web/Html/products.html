@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>منتجات المتجر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="../css/style-products.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="user-info">
+          <img src="https://via.placeholder.com/40" alt="الصورة" id="user-photo" />
+          <span id="user-name">المستخدم</span>
+          <div class="user-dropdown">
+            <i class="fas fa-chevron-down"></i>
+            <div class="dropdown-menu">
+              <a href="#" id="logout-btn">تسجيل الخروج</a>
+            </div>
+          </div>
+        </div>
+
+        <h2>منتجات المتجر</h2>
+        <div class="filters">
+          <div class="dropdown">
+            <button id="category-filter">جميع الفئات</button>
+            <div class="dropdown-content" id="category-options">
+              <a href="#" data-category="">جميع الفئات</a>
+              <a href="#" data-category="إلكترونيات">إلكترونيات</a>
+              <a href="#" data-category="ملابس">ملابس</a>
+              <a href="#" data-category="كتب">كتب</a>
+              <a href="#" data-category="أثاث">أثاث</a>
+            </div>
+          </div>
+
+          <select id="sort-options">
+            <option value="newest">الأحدث أولاً</option>
+            <option value="price-asc">السعر من الأقل</option>
+            <option value="price-desc">السعر من الأعلى</option>
+            <option value="under-50">أقل من $50</option>
+          </select>
+
+          <button class="add-btn" onclick="location.href='add-product.html'">+ إضافة منتج</button>
+        </div>
+      </div>
+
+      <div class="products" id="products"></div>
+
+      <div class="pagination">
+        <button>&rarr;</button>
+        <button>3</button>
+        <button>2</button>
+        <button class="active">1</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { auth, db } from "../js/firebase.js";
+      import {
+        onAuthStateChanged,
+        signOut
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+      import {
+        collection,
+        onSnapshot,
+        query,
+        orderBy
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+      const userName = document.getElementById("user-name");
+      const userPhoto = document.getElementById("user-photo");
+      const logoutBtn = document.getElementById("logout-btn");
+      const productsContainer = document.getElementById("products");
+      const sortSelect = document.getElementById("sort-options");
+      const categoryOptions = document.getElementById("category-options");
+
+      let allProducts = [];
+      let currentCategory = "";
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          userName.textContent = user.displayName || "مستخدم";
+          userPhoto.src = user.photoURL || "https://via.placeholder.com/40";
+        } else {
+          window.location.href = "login.html";
+        }
+      });
+
+      logoutBtn.addEventListener("click", async () => {
+        try {
+          await signOut(auth);
+          localStorage.removeItem("user");
+          window.location.href = "login.html";
+        } catch (error) {
+          alert("فشل تسجيل الخروج: " + error.message);
+        }
+      });
+
+      function renderProducts(products) {
+        productsContainer.innerHTML = "";
+        if (products.length === 0) {
+          productsContainer.innerHTML = "<p>لا توجد منتجات متاحة حالياً.</p>";
+          return;
+        }
+
+        products.forEach((p) => {
+          productsContainer.innerHTML += `
+            <div class="product-card">
+              <img src="${p.image}" alt="${p.name}" />
+              <h3>${p.name}</h3>
+              <p>${p.description}</p>
+              <span>${p.price}$</span>
+              <small>${new Date(p.createdAt?.seconds * 1000).toLocaleDateString()}</small>
+            </div>
+          `;
+        });
+      }
+
+      function applyFilters() {
+        let filtered = [...allProducts];
+
+  
+        if (currentCategory) {
+          filtered = filtered.filter(p => p.category === currentCategory);
+        }
+
+
+        switch (sortSelect.value) {
+          case "price-asc":
+            filtered.sort((a, b) => a.price - b.price);
+            break;
+          case "price-desc":
+            filtered.sort((a, b) => b.price - a.price);
+            break;
+          case "under-50":
+            filtered = filtered.filter(p => p.price < 50);
+            break;
+          case "newest":
+          default:
+            filtered.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+            break;
+        }
+
+        renderProducts(filtered);
+      }
+
+      sortSelect.addEventListener("change", applyFilters);
+
+      categoryOptions.addEventListener("click", (e) => {
+        const el = e.target.closest("a");
+        if (!el) return;
+        currentCategory = el.dataset.category;
+        document.getElementById("category-filter").textContent = el.textContent;
+        applyFilters();
+      });
+
+
+      onSnapshot(query(collection(db, "products")), (snapshot) => {
+        allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        applyFilters();
+      });
+    </script>
+  </body>
+</html>

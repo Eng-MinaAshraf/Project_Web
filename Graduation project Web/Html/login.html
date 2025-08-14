@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول</title>
+  <link rel="stylesheet" href="../css/style-login.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="login-box">
+    <h2>تسجيل الدخول إلى المتجر</h2>
+
+    <form id="login-form">
+      <div class="input-group">
+        <label for="email">البريد الإلكتروني</label>
+        <input type="email" id="email" placeholder="أدخل بريدك الإلكتروني" required>
+      </div>
+
+      <div class="input-group">
+        <label for="password">كلمة المرور</label>
+        <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
+      </div>
+
+      <div id="login-success" style="color: green; margin-top: 10px;"></div>
+      <div id="login-error" style="color: red; margin-top: 10px;"></div>
+
+      <button class="login-btn" type="submit">تسجيل الدخول</button>
+    </form>
+
+    <div class="or">أو سجل باستخدام</div>
+    <div class="social-buttons">
+      <a href="#"><i class="fab fa-facebook-f"></i></a>
+      <a href="#"><i class="fab fa-google"></i></a>
+    </div>
+
+    <div class="register-link">
+      ليس لديك حساب؟ <a href="Sign_Up.html">سجل الآن</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth } from '../js/firebase.js';
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+    const loginForm = document.getElementById("login-form");
+    const loginSuccess = document.getElementById("login-success");
+    const loginError = document.getElementById("login-error");
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      // إعادة تعيين الرسائل
+      loginSuccess.textContent = "";
+      loginError.textContent = "";
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        loginSuccess.textContent = "تم تسجيل الدخول بنجاح";
+
+        setTimeout(() => {
+          location.href = "products.html";
+        }, 1500);
+      } catch (error) {
+        switch (error.code) {
+          case "auth/user-not-found":
+            loginError.textContent = "البريد الإلكتروني غير مسجل.";
+            break;
+          case "auth/wrong-password":
+            loginError.textContent = "كلمة المرور غير صحيحة.";
+            break;
+          default:
+            loginError.textContent = "حدث خطأ: " + error.message;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
